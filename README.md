@@ -1,11 +1,17 @@
 # Bash to Zsh Migration Tool / Bash 到 Zsh 遷移工具
 
+**Complete automation script for migrating bash configuration to zsh.**
+
+**完整的自動化腳本，用於將 bash 設定遷移到 zsh。**
+
 ---
 
-## 🌐 Language / 語言
+## 🌐 Language Selection / 語言選擇
 
-**English**: [README](#english-version)  
-**繁體中文**: [README](#traditional-chinese-version)
+| Language | Link |
+|----------|------|
+| 🇬🇧 **English** | [Read English README](#english-readme) |
+| 🇹🇼 **繁體中文** | [閱讀繁體中文說明](#traditional-chinese-readme) |
 
 ---
 
@@ -17,14 +23,11 @@
 
 ---
 
-## 📖 Full Documentation / 完整文檔
+<a name="english-readme"></a>
 
-<details>
-<summary><strong>🇬🇧 English Version</strong> (Click to expand)</summary>
+## 📖 English README
 
 ---
-
-Complete automation script for migrating bash configuration to zsh.
 
 ### Features
 
@@ -57,7 +60,6 @@ Complete automation script for migrating bash configuration to zsh.
     + export PATH="$HOME/.local/bin:$PATH"
   → Aliases...
     + alias ll="ls -la"
-    + alias gs="git status"
 
 📚 Merging history...
 ✓ Merged bash history
@@ -139,14 +141,11 @@ A: Backup files are named `~/.zshrc.bak.YYYYMMDD_HHMMSS` in your home directory.
 
 ---
 
-</details>
+<a name="traditional-chinese-readme"></a>
 
-<details>
-<summary><strong>🇹🇼 繁體中文版本</strong> (點此展開)</summary>
+## 📖 繁體中文說明
 
 ---
-
-完整的自動化腳本，用於將 bash 設定遷移到 zsh。
 
 ### 功能特色
 
@@ -260,10 +259,6 @@ A: 執行腳本後，手動編輯 `~/.zshrc` 移除不需要的項目即可。
 
 **Q: 備份檔案存在哪裡？**  
 A: 備份檔案命名為 `~/.zshrc.bak.YYYYMMDD_HHMMSS`，存在主目錄中。
-
----
-
-</details>
 
 ---
 
