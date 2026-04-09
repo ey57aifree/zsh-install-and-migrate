@@ -18,8 +18,8 @@
 ## 🚀 Quick Start / 快速開始
 
 ```bash
-git clone https://github.com/ey57aifree/bash-zsh-migration.git
-cd bash-zsh-migration
+git clone https://github.com/ey57aifree/zsh-install-and-migrate.git
+cd zsh-install-and-migrate
 ./migrate-bash-to-zsh.sh
 exec zsh
 ```
