@@ -26,12 +26,11 @@ main() {
     echo ""
     echo -e "${GREEN}1)${NC} Pure Install Zsh (僅安裝 Zsh)"
     echo -e "${GREEN}2)${NC} Install Zsh + Migrate from Bash (安裝 Zsh + 遷移設定)"
-    echo -e "${GREEN}3)${NC} Ultimate Setup (安裝 Zsh + 遷移設定 + 安裝外掛)"
+    echo -e "${GREEN}3)${NC} Ultimate Setup (安裝 Zsh + Oh My Zsh + 遷移設定 + 安裝外掛)"
     echo -e "${GREEN}4)${NC} Pure Plugin Install (僅安裝外掛 - 會檢查 Zsh 是否存在)"
     echo -e "${GREEN}q)${NC} Quit"
     echo ""
     
-    # Using printf + read for cross-shell compatibility (Bash and Zsh)
     printf "Enter your choice [1-4/q]: "
     read -r choice
     echo ""
@@ -52,10 +51,13 @@ main() {
             echo -e "${CYAN}Step 1: Installing Zsh...${NC}"
             ./install-zsh.sh
             echo ""
-            echo -e "${CYAN}Step 2: Migrating settings...${NC}"
+            echo -e "${CYAN}Step 2: Installing Oh My Zsh...${NC}"
+            ./install-omz.sh
+            echo ""
+            echo -e "${CYAN}Step 3: Migrating settings from Bash...${NC}"
             ./migrate-bash-to-zsh.sh
             echo ""
-            echo -e "${CYAN}Step 3: Installing recommended plugins...${NC}"
+            echo -e "${CYAN}Step 4: Installing recommended plugins...${NC}"
             ./install-plugins.sh
             ;;
         4)
