@@ -31,7 +31,9 @@ main() {
     echo -e "${GREEN}q)${NC} Quit"
     echo ""
     
-    read -r -p "Enter your choice [1-4/q]: " choice
+    # Using printf + read for cross-shell compatibility (Bash and Zsh)
+    printf "Enter your choice [1-4/q]: "
+    read -r choice
     echo ""
 
     case $choice in
