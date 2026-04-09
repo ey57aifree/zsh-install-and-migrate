@@ -18,12 +18,12 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# File paths
-BASHRC="~/.bashrc"
-BASH_PROFILE="~/.bash_profile"
-ZSHRC="~/.zshrc"
-ZSH_HISTORY="~/.zsh_history"
-BASH_HISTORY="~/.bash_history"
+# File paths - Using $HOME instead of ~ for reliable expansion
+BASHRC="$HOME/.bashrc"
+BASH_PROFILE="$HOME/.bash_profile"
+ZSHRC="$HOME/.zshrc"
+ZSH_HISTORY="$HOME/.zsh_history"
+BASH_HISTORY="$HOME/.bash_history"
 
 # Statistics
 MIGRATED_ITEMS=0
@@ -43,29 +43,23 @@ print_step() { echo -e "${CYAN}→${NC} $1"; }
 
 check_file() {
     local file="$1"
-    local real_path
-    real_path=$(eval echo "$file")
-    [[ -f "$real_path" ]]
+    [[ -f "$file" ]]
 }
 
 line_exists() {
     local line="$1"
     local file="$2"
-    local real_path
-    real_path=$(eval echo "$file")
-    check_file "$file" && /usr/bin/grep -qF "$line" "$real_path" 2>/dev/null
+    check_file "$file" && /usr/bin/grep -qF "$line" "$file" 2>/dev/null
 }
 
 append_if_not_exists() {
     local line="$1"
     local file="$2"
-    local real_path
-    real_path=$(eval echo "$file")
     
-    /bin/mkdir -p "$(dirname "$real_path")" 2>/dev/null
+    /bin/mkdir -p "$(dirname "$file")" 2>/dev/null
     
     if ! line_exists "$line" "$file"; then
-        echo "$line" >> "$real_path"
+        echo "$line" >> "$file"
         MIGRATED_ITEMS=$((MIGRATED_ITEMS + 1))
         return 0
     fi
@@ -73,100 +67,9 @@ append_if_not_exists() {
     return 1
 }
 
-install_zsh() {
-    echo -e "${BLUE}📦 Installing zsh...${NC}"
-    
-    if command -v apt &>/dev/null; then
-        echo "  Using apt package manager..."
-        if ! sudo -S -p '' apt update &>/dev/null; then
-            print_warning "Failed to update package list, continuing anyway..."
-        fi
-        if ! sudo -S -p '' apt install -y zsh &>/dev/null; then
-            print_error "Failed to install zsh"
-            return 1
-        fi
-    elif command -v dnf &>/dev/null; then
-        echo "  Using dnf package manager..."
-        if ! sudo -S -p '' dnf install -y zsh &>/dev/null; then
-            print_error "Failed to install zsh"
-            return 1
-        fi
-    elif command -v yum &>/dev/null; then
-        echo "  Using yum package manager..."
-        if ! sudo -S -p '' yum install -y zsh &>/dev/null; then
-            print_error "Failed to install zsh"
-            return 1
-        fi
-    elif command -v pacman &>/dev/null; then
-        echo "  Using pacman package manager..."
-        if ! sudo -S -p '' pacman -S --noconfirm zsh &>/dev/null; then
-            print_error "Failed to install zsh"
-            return 1
-        fi
-    elif command -v brew &>/dev/null; then
-        echo "  Using Homebrew..."
-        if ! brew install zsh &>/dev/null; then
-            print_error "Failed to install zsh"
-            return 1
-        fi
-    else
-        print_error "Unsupported package manager. Please install zsh manually."
-        return 1
-    fi
-    
-    print_info "Zsh installed successfully!"
-    return 0
-}
-
-check_zsh_installed() {
-    echo -e "${BLUE}🔍 Checking zsh installation...${NC}"
-    
-    if command -v zsh &>/dev/null; then
-        local version
-        version=$(zsh --version 2>&1 | /usr/bin/head -n1)
-        print_info "Zsh is installed: $version"
-        return 0
-    else
-        print_error "Zsh is NOT installed on your system"
-        echo ""
-        echo -e "${YELLOW}Would you like to install zsh now? [Y/n]${NC}"
-        read -r -p "" response
-        
-        if [[ "$response" =~ ^[Nn]$ ]]; then
-            echo ""
-            echo -e "${YELLOW}Installation instructions:${NC}"
-            echo ""
-            
-            if command -v apt &>/dev/null; then
-                echo -e "  ${GREEN}sudo -S -p '' apt update && sudo -S -p '' apt install zsh${NC}"
-            elif command -v dnf &>/dev/null; then
-                echo -e "  ${GREEN}sudo -S -p '' dnf install zsh${NC}"
-            elif command -v yum &>/dev/null; then
-                echo -e "  ${GREEN}sudo -S -p '' yum install zsh${NC}"
-            elif command -v pacman &>/dev/null; then
-                echo -e "  ${GREEN}sudo -S -p '' pacman -S zsh${NC}"
-            else
-                echo "  Please install zsh from your distribution's repository."
-            fi
-            echo ""
-            return 1
-        fi
-        
-        # Auto install
-        if install_zsh; then
-            return 0
-        else
-            print_error "Installation failed. Please install zsh manually."
-            return 1
-        fi
-    fi
-}
-
 migrate_settings() {
     local source_file="$1"
     local description="$2"
-    local real_path
-    real_path=$(eval echo "$source_file")
     
     if ! check_file "$source_file"; then
         print_warning "$description ($source_file) not found"
@@ -184,7 +87,7 @@ migrate_settings() {
         if append_if_not_exists "$line" "$ZSHRC"; then
             echo "    + $line"
         fi
-    done < <(/usr/bin/grep -E '^export\s+PATH' "$real_path" 2>/dev/null || true)
+    done < <(/usr/bin/grep -E '^export\s+PATH' "$source_file" 2>/dev/null || true)
     
     # 2. Import other environment variables
     echo "  → Environment variables..."
@@ -195,7 +98,7 @@ migrate_settings() {
         if append_if_not_exists "$line" "$ZSHRC"; then
             echo "    + $line"
         fi
-    done < <(/usr/bin/grep -E '^export\s+(LANG|LC_|EDITOR|VISUAL|TERM)' "$real_path" 2>/dev/null | /usr/bin/grep -v PATH || true)
+    done < <(/usr/bin/grep -E '^export\s+(LANG|LC_|EDITOR|VISUAL|TERM)' "$source_file" 2>/dev/null | /usr/bin/grep -v PATH || true)
     
     # 3. Import aliases
     echo "  → Aliases..."
@@ -206,21 +109,18 @@ migrate_settings() {
         if append_if_not_exists "$line" "$ZSHRC"; then
             echo "    + $line"
         fi
-    done < <(/usr/bin/grep -E '^alias\s+' "$real_path" 2>/dev/null || true)
+    done < <(/usr/bin/grep -E '^alias\s+' "$source_file" 2>/dev/null || true)
 }
 
 merge_history() {
     echo -e "${BLUE}📚 Merging history...${NC}"
-    local bash_hist zsh_hist
-    bash_hist=$(eval echo "$BASH_HISTORY")
-    zsh_hist=$(eval echo "$ZSH_HISTORY")
     
-    if [[ -f "$bash_hist" ]]; then
-        if [[ -f "$zsh_hist" ]]; then
-            /bin/cat "$bash_hist" "$zsh_hist" | /usr/bin/sort -u > "${zsh_hist}.tmp"
-            /bin/mv "${zsh_hist}.tmp" "$zsh_hist"
+    if [[ -f "$BASH_HISTORY" ]]; then
+        if [[ -f "$ZSH_HISTORY" ]]; then
+            /bin/cat "$BASH_HISTORY" "$ZSH_HISTORY" | /usr/bin/sort -u > "${ZSH_HISTORY}.tmp"
+            /bin/mv "${ZSH_HISTORY}.tmp" "$ZSH_HISTORY"
         else
-            /bin/cp "$bash_hist" "$zsh_hist"
+            /bin/cp "$BASH_HISTORY" "$ZSH_HISTORY"
         fi
         print_info "Merged bash history"
         MIGRATED_ITEMS=$((MIGRATED_ITEMS + 1))
@@ -242,7 +142,7 @@ setup_zsh_options() {
 # ==========================================' >> "$ZSHRC"
     echo '' >> "$ZSHRC"
     echo '# History settings' >> "$ZSHRC"
-    echo 'HISTFILE=~/.zsh_history' >> "$ZSHRC"
+    echo "HISTFILE=$ZSH_HISTORY" >> "$ZSHRC"
     echo 'HISTSIZE=10000' >> "$ZSHRC"
     echo 'SAVEHIST=10000' >> "$ZSHRC"
     echo 'setopt EXTENDED_HISTORY INC_APPEND_HISTORY SHARE_HISTORY' >> "$ZSHRC"
@@ -286,18 +186,17 @@ main() {
     echo ""
     
     # Check if zsh is installed FIRST
-    if ! check_zsh_installed; then
+    if ! command -v zsh &>/dev/null; then
+        print_error "Zsh is not installed. Please run ./install-zsh.sh first."
         exit 1
     fi
     
     echo ""
     
     # Backup existing zshrc
-    local zshrc_real
-    zshrc_real=$(eval echo "$ZSHRC")
-    if [[ -f "$zshrc_real" ]]; then
-        local backup="${zshrc_real}.bak.$(/bin/date +%Y%m%d_%H%M%S)"
-        /bin/cp "$zshrc_real" "$backup"
+    if [[ -f "$ZSHRC" ]]; then
+        local backup="${ZSHRC}.bak.$(/bin/date +%Y%m%d_%H%M%S)"
+        /bin/cp "$ZSHRC" "$backup"
         print_info "Backed up ~/.zshrc → $backup"
     fi
     
