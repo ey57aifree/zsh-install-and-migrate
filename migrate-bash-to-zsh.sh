@@ -1,12 +1,6 @@
 #!/bin/bash
 # migrate-bash-to-zsh.sh - Complete bash to zsh migration tool
 # Usage: ./migrate-bash-to-zsh.sh
-#
-# This script migrates bash configuration to zsh:
-# - PATH and environment variables
-# - Aliases
-# - Command history
-# - Basic zsh options
 
 set -e
 
@@ -18,7 +12,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# File paths - Using $HOME instead of ~ for reliable expansion
+# File paths
 BASHRC="$HOME/.bashrc"
 BASH_PROFILE="$HOME/.bash_profile"
 ZSHRC="$HOME/.zshrc"
@@ -65,6 +59,19 @@ append_if_not_exists() {
     fi
     SKIPPED_ITEMS=$((SKIPPED_ITEMS + 1))
     return 1
+}
+
+check_zsh_installed() {
+    echo -e "${BLUE}🔍 Checking zsh installation...${NC}"
+    if command -v zsh &>/dev/null; then
+        local version
+        version=$(zsh --version 2>&1 | /usr/bin/head -n1)
+        print_info "Zsh is installed: $version"
+        return 0
+    else
+        print_error "Zsh is NOT installed on your system"
+        return 1
+    fi
 }
 
 migrate_settings() {
@@ -114,7 +121,6 @@ migrate_settings() {
 
 merge_history() {
     echo -e "${BLUE}📚 Merging history...${NC}"
-    
     if [[ -f "$BASH_HISTORY" ]]; then
         if [[ -f "$ZSH_HISTORY" ]]; then
             /bin/cat "$BASH_HISTORY" "$ZSH_HISTORY" | /usr/bin/sort -u > "${ZSH_HISTORY}.tmp"
@@ -131,18 +137,15 @@ merge_history() {
 
 setup_zsh_options() {
     echo -e "${BLUE}⚙️  Setting up zsh options...${NC}"
-    
-    # Add a separator if file has content
     if check_file "$ZSHRC"; then
         echo '' >> "$ZSHRC"
     fi
-    
     echo '# ========================================
 # Zsh Options (auto-configured by migrate-bash-to-zsh.sh)
 # ==========================================' >> "$ZSHRC"
     echo '' >> "$ZSHRC"
     echo '# History settings' >> "$ZSHRC"
-    echo "HISTFILE=$ZSH_HISTORY" >> "$ZSHRC"
+    echo 'HISTFILE=$HOME/.zsh_history' >> "$ZSHRC"
     echo 'HISTSIZE=10000' >> "$ZSHRC"
     echo 'SAVEHIST=10000' >> "$ZSHRC"
     echo 'setopt EXTENDED_HISTORY INC_APPEND_HISTORY SHARE_HISTORY' >> "$ZSHRC"
@@ -154,9 +157,28 @@ setup_zsh_options() {
     echo '# Quality of Life settings' >> "$ZSHRC"
     echo 'setopt NO_BEep AUTO_PUSHD PUSHD_IGNORE_DUPS CDABLE_VARS AUTO_CD' >> "$ZSHRC"
     echo 'setopt GLOB_COMPLETE HASH_LIST_ALL LIST_TYPES' >> "$ZSHRC"
-    
     print_info "Zsh options configured"
     MIGRATED_ITEMS=$((MIGRATED_ITEMS + 1))
+}
+
+change_default_shell() {
+    echo -e "${BLUE}🐚 Setting Zsh as default shell...${NC}"
+    local zsh_path
+    zsh_path=$(which zsh)
+    
+    if [[ -z "$zsh_path" ]]; then
+        print_error "Zsh path not found. Skipping default shell change."
+        return 1
+    fi
+    
+    echo "Executing: chsh -s $zsh_path"
+    if chsh -s "$zsh_path"; then
+        print_info "Default shell changed to Zsh successfully!"
+        echo -e "${YELLOW}Note: You must log out and log back in (or restart SSH session) for this to take effect.${NC}"
+    else
+        print_warning "Failed to change default shell automatically."
+        echo -e "You can do it manually by running: ${CYAN}chsh -s $zsh_path${NC}"
+    fi
 }
 
 generate_report() {
@@ -168,29 +190,16 @@ generate_report() {
     echo "  • Migrated: $MIGRATED_ITEMS items"
     echo "  • Skipped (duplicates): $SKIPPED_ITEMS items"
     echo ""
-    echo -e "${CYAN}Next steps:${NC}"
-    echo "  1. Review ~/.zshrc content"
-    echo "  2. Run: source ~/.zshrc"
-    echo "  3. Or restart terminal"
-    echo ""
-    echo -e "${CYAN}Recommendations:${NC}"
-    echo "  • Install oh-my-zsh or zinit"
-    echo "  • Install zsh-autosuggestions and zsh-syntax-highlighting"
-    echo ""
 }
 
 main() {
     print_header
-    
     echo "Starting bash to zsh migration..."
     echo ""
     
-    # Check if zsh is installed FIRST
-    if ! command -v zsh &>/dev/null; then
-        print_error "Zsh is not installed. Please run ./install-zsh.sh first."
+    if ! check_zsh_installed; then
         exit 1
     fi
-    
     echo ""
     
     # Backup existing zshrc
@@ -200,18 +209,25 @@ main() {
         print_info "Backed up ~/.zshrc → $backup"
     fi
     
-    # Migrate settings
     migrate_settings "$BASHRC" "~/.bashrc"
     migrate_settings "$BASH_PROFILE" "~/.bash_profile"
-    
-    # Merge history
     merge_history
-    
-    # Setup zsh options
     setup_zsh_options
-    
-    # Generate report
     generate_report
+    
+    echo -e "${BLUE}Would you like to set Zsh as your default shell? [Y/n]${NC}"
+    read -r -p "" response
+    if [[ "$response" =~ ^[Yy]$ || -z "$response" ]]; then
+        change_default_shell
+    else
+        echo "Skipping default shell change."
+    fi
+    
+    echo ""
+    echo -e "${CYAN}Next steps:${NC}"
+    echo "  1. Review ~/.zshrc content"
+    echo "  2. Run: source ~/.zshrc"
+    echo "  3. Or restart terminal (and log back in if you changed default shell)"
 }
 
 main "$@"
